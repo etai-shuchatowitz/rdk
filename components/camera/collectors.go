@@ -38,13 +38,13 @@ func (m method) String() string {
 
 // TODO: add tests for this file.
 
-func newNextPointCloudCollector(resource interface{}, params data.CollectorParams) (data.Collector, error) {
+func newNextPointCloudCollector(resource interface{}, params data.CollectorParams, tagger data.Tagger) (data.Collector, error) {
 	camera, err := assertCamera(resource)
 	if err != nil {
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
 		_, span := trace.StartSpan(ctx, "camera::data::collector::CaptureFunc::NextPointCloud")
 		defer span.End()
 
@@ -74,7 +74,7 @@ func newNextPointCloudCollector(resource interface{}, params data.CollectorParam
 	return data.NewCollector(cFunc, params)
 }
 
-func newReadImageCollector(resource interface{}, params data.CollectorParams) (data.Collector, error) {
+func newReadImageCollector(resource interface{}, params data.CollectorParams, tagger data.Tagger) (data.Collector, error) {
 	camera, err := assertCamera(resource)
 	if err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func newReadImageCollector(resource interface{}, params data.CollectorParams) (d
 		}
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
 		_, span := trace.StartSpan(ctx, "camera::data::collector::CaptureFunc::ReadImage")
 		defer span.End()
 
@@ -126,12 +126,12 @@ func newReadImageCollector(resource interface{}, params data.CollectorParams) (d
 	return data.NewCollector(cFunc, params)
 }
 
-func newGetImagesCollector(resource interface{}, params data.CollectorParams) (data.Collector, error) {
+func newGetImagesCollector(resource interface{}, params data.CollectorParams, tagger data.Tagger) (data.Collector, error) {
 	camera, err := assertCamera(resource)
 	if err != nil {
 		return nil, err
 	}
-	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
 		_, span := trace.StartSpan(ctx, "camera::data::collector::CaptureFunc::GetImages")
 		defer span.End()
 

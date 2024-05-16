@@ -36,10 +36,10 @@ func (r *structReading) toProto() *structpb.Struct {
 }
 
 var (
-	structCapturer = CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any) (interface{}, error) {
+	structCapturer = CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger struct{}) (interface{}, error) {
 		return dummyStructReading, nil
 	})
-	binaryCapturer = CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any) (interface{}, error) {
+	binaryCapturer = CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger struct{}) (interface{}, error) {
 		return dummyBytesReading, nil
 	})
 	dummyStructReading      = structReading{}
@@ -253,7 +253,7 @@ func TestCtxCancelledNotLoggedInTickerBasedCaptureAfterClose(t *testing.T) {
 	tmpDir := t.TempDir()
 	target := datacapture.NewBuffer(tmpDir, &v1.DataCaptureMetadata{})
 	captured := make(chan struct{})
-	errorCapturer := CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any) (interface{}, error) {
+	errorCapturer := CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger struct{}) (interface{}, error) {
 		select {
 		case <-ctx.Done():
 			return nil, fmt.Errorf("arbitrary wrapping message: %w", ctx.Err())
@@ -290,7 +290,7 @@ func TestLogErrorsOnlyOnce(t *testing.T) {
 	md := v1.DataCaptureMetadata{}
 	buf := datacapture.NewBuffer(tmpDir, &md)
 	wrote := make(chan struct{})
-	errorCapturer := CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any) (interface{}, error) {
+	errorCapturer := CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger struct{}) (interface{}, error) {
 		return nil, errors.New("I am an error")
 	})
 	target := &signalingBuffer{
@@ -337,7 +337,7 @@ func validateReadings(t *testing.T, act []*v1.SensorData, n int) {
 	}
 }
 
-//nolint
+// nolint
 func getAllFiles(dir string) []os.FileInfo {
 	var files []os.FileInfo
 	_ = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {

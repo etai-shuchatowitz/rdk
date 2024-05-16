@@ -15,7 +15,7 @@ import (
 )
 
 // CollectorConstructor contains a function for constructing an instance of a Collector.
-type CollectorConstructor func(resource interface{}, params CollectorParams) (Collector, error)
+type CollectorConstructor func(resource interface{}, params CollectorParams, tagger Tagger) (Collector, error)
 
 // CollectorParams contain the parameters needed to construct a Collector.
 type CollectorParams struct {
@@ -27,6 +27,10 @@ type CollectorParams struct {
 	BufferSize    int
 	Logger        logging.Logger
 	Clock         clock.Clock
+}
+
+type Tagger struct {
+	Name string
 }
 
 // Validate validates that p contains all required parameters.

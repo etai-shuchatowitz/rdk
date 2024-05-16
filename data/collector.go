@@ -31,7 +31,7 @@ import (
 var sleepCaptureCutoff = 2 * time.Millisecond
 
 // CaptureFunc allows the creation of simple Capturers with anonymous functions.
-type CaptureFunc func(ctx context.Context, params map[string]*anypb.Any) (interface{}, error)
+type CaptureFunc func(ctx context.Context, params map[string]*anypb.Any, tagger Tagger) (interface{}, error)
 
 // FromDMContextKey is used to check whether the context is from data management.
 // Deprecated: use a camera.Extra with camera.NewContext instead.
@@ -72,6 +72,7 @@ type collector struct {
 	closed           bool
 	target           datacapture.BufferedWriter
 	lastLoggedErrors map[string]int64
+	tagger           Tagger
 }
 
 // Close closes the channels backing the Collector. It should always be called before disposing of a Collector to avoid
@@ -205,7 +206,7 @@ func (c *collector) tickerBasedCapture(started chan struct{}) {
 
 func (c *collector) getAndPushNextReading() {
 	timeRequested := timestamppb.New(c.clock.Now().UTC())
-	reading, err := c.captureFunc(c.cancelCtx, c.params)
+	reading, err := c.captureFunc(c.cancelCtx, c.params, c.tagger)
 	timeReceived := timestamppb.New(c.clock.Now().UTC())
 	if err != nil {
 		if errors.Is(err, ErrNoCaptureToStore) {
@@ -283,6 +284,7 @@ func NewCollector(captureFunc CaptureFunc, params CollectorParams) (Collector, e
 	} else {
 		c = params.Clock
 	}
+	tagger := Tagger{Name: "tagger"}
 	return &collector{
 		captureResults:   make(chan *v1.SensorData, params.QueueSize),
 		captureErrors:    make(chan error, params.QueueSize),
@@ -296,6 +298,7 @@ func NewCollector(captureFunc CaptureFunc, params CollectorParams) (Collector, e
 		clock:            c,
 		closed:           false,
 		lastLoggedErrors: make(map[string]int64, 0),
+		tagger:           tagger,
 	}, nil
 }
 

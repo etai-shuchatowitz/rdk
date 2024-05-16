@@ -336,7 +336,8 @@ func (svc *builtIn) initializeOrUpdateCollector(
 		Logger:        svc.logger,
 		Clock:         clock,
 	}
-	collector, err := (*collectorConstructor)(res, params)
+	tagger := data.Tagger{Name: "reconfigured tagger"}
+	collector, err := (*collectorConstructor)(res, params, tagger)
 	if err != nil {
 		return nil, err
 	}
@@ -663,7 +664,7 @@ func (svc *builtIn) sync() {
 	}
 }
 
-//nolint
+// nolint
 func getAllFilesToSync(dir string, lastModifiedMillis int) []string {
 	var filePaths []string
 	_ = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {

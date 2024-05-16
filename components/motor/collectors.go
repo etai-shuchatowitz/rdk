@@ -29,13 +29,13 @@ func (m method) String() string {
 
 // newPositionCollector returns a collector to register a position method. If one is already registered
 // with the same MethodMetadata it will panic.
-func newPositionCollector(resource interface{}, params data.CollectorParams) (data.Collector, error) {
+func newPositionCollector(resource interface{}, params data.CollectorParams, tagger data.Tagger) (data.Collector, error) {
 	motor, err := assertMotor(resource)
 	if err != nil {
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
 		v, err := motor.Position(ctx, data.FromDMExtraMap)
 		if err != nil {
 			// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore
@@ -54,13 +54,13 @@ func newPositionCollector(resource interface{}, params data.CollectorParams) (da
 
 // newIsPoweredCollector returns a collector to register an is powered method. If one is already registered
 // with the same MethodMetadata it will panic.
-func newIsPoweredCollector(resource interface{}, params data.CollectorParams) (data.Collector, error) {
+func newIsPoweredCollector(resource interface{}, params data.CollectorParams, tagger data.Tagger) (data.Collector, error) {
 	motor, err := assertMotor(resource)
 	if err != nil {
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
 		v, powerPct, err := motor.IsPowered(ctx, data.FromDMExtraMap)
 		if err != nil {
 			// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore

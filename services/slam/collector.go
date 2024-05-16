@@ -27,13 +27,13 @@ func (m method) String() string {
 	return "Unknown"
 }
 
-func newPositionCollector(resource interface{}, params data.CollectorParams) (data.Collector, error) {
+func newPositionCollector(resource interface{}, params data.CollectorParams, tagger data.Tagger) (data.Collector, error) {
 	slam, err := assertSLAM(resource)
 	if err != nil {
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
 		pose, componentRef, err := slam.Position(ctx)
 		if err != nil {
 			return nil, data.FailedToReadErr(params.ComponentName, position.String(), err)
@@ -43,13 +43,13 @@ func newPositionCollector(resource interface{}, params data.CollectorParams) (da
 	return data.NewCollector(cFunc, params)
 }
 
-func newPointCloudMapCollector(resource interface{}, params data.CollectorParams) (data.Collector, error) {
+func newPointCloudMapCollector(resource interface{}, params data.CollectorParams, tagger data.Tagger) (data.Collector, error) {
 	slam, err := assertSLAM(resource)
 	if err != nil {
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
 		// edited maps do not need to be captured because they should not be modified
 		f, err := slam.PointCloudMap(ctx, false)
 		if err != nil {

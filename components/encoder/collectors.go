@@ -25,13 +25,13 @@ func (m method) String() string {
 
 // newTicksCountCollector returns a collector to register a ticks count method. If one is already registered
 // with the same MethodMetadata it will panic.
-func newTicksCountCollector(resource interface{}, params data.CollectorParams) (data.Collector, error) {
+func newTicksCountCollector(resource interface{}, params data.CollectorParams, tagger data.Tagger) (data.Collector, error) {
 	encoder, err := assertEncoder(resource)
 	if err != nil {
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
 		v, positionType, err := encoder.Position(ctx, PositionTypeUnspecified, data.FromDMExtraMap)
 		if err != nil {
 			// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore

@@ -33,13 +33,13 @@ func (m method) String() string {
 
 // newAnalogCollector returns a collector to register an analog reading method. If one is already registered
 // with the same MethodMetadata it will panic.
-func newAnalogCollector(resource interface{}, params data.CollectorParams) (data.Collector, error) {
+func newAnalogCollector(resource interface{}, params data.CollectorParams, tagger data.Tagger) (data.Collector, error) {
 	board, err := assertBoard(resource)
 	if err != nil {
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, arg map[string]*anypb.Any) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, arg map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
 		var value int
 		if _, ok := arg[analogReaderNameKey]; !ok {
 			return nil, data.FailedToReadErr(params.ComponentName, analogs.String(),
@@ -65,13 +65,13 @@ func newAnalogCollector(resource interface{}, params data.CollectorParams) (data
 
 // newGPIOCollector returns a collector to register a gpio get method. If one is already registered
 // with the same MethodMetadata it will panic.
-func newGPIOCollector(resource interface{}, params data.CollectorParams) (data.Collector, error) {
+func newGPIOCollector(resource interface{}, params data.CollectorParams, tagger data.Tagger) (data.Collector, error) {
 	board, err := assertBoard(resource)
 	if err != nil {
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, arg map[string]*anypb.Any) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, arg map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
 		var value bool
 		if _, ok := arg[gpioPinNameKey]; !ok {
 			return nil, data.FailedToReadErr(params.ComponentName, gpios.String(),

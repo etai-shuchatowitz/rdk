@@ -3,6 +3,7 @@ package sensor
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	pb "go.viam.com/api/common/v1"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -26,20 +27,22 @@ func (m method) String() string {
 
 // newReadingsCollector returns a collector to register a sensor reading method. If one is already registered
 // with the same MethodMetadata it will panic.
-func newReadingsCollector(resource interface{}, params data.CollectorParams) (data.Collector, error) {
+func newReadingsCollector(resource interface{}, params data.CollectorParams, tagger data.Tagger) (data.Collector, error) {
 	sensorResource, err := assertSensor(resource)
 	if err != nil {
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, arg map[string]*anypb.Any) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, arg map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
 		values, err := sensorResource.Readings(ctx, data.FromDMExtraMap)
+		fmt.Printf("I am a tagger %s", tagger)
 		if err != nil {
 			// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore
 			// is used in the datamanager to exclude readings from being captured and stored.
 			if errors.Is(err, data.ErrNoCaptureToStore) {
 				return nil, err
 			}
+
 			return nil, data.FailedToReadErr(params.ComponentName, readings.String(), err)
 		}
 		readings, err := protoutils.ReadingGoToProto(values)
