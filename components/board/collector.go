@@ -33,16 +33,16 @@ func (m method) String() string {
 
 // newAnalogCollector returns a collector to register an analog reading method. If one is already registered
 // with the same MethodMetadata it will panic.
-func newAnalogCollector(resource interface{}, params data.CollectorParams, tagger data.Tagger) (data.Collector, error) {
+func newAnalogCollector(resource interface{}, params data.CollectorParams) (data.Collector, error) {
 	board, err := assertBoard(resource)
 	if err != nil {
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, arg map[string]*anypb.Any, tagger data.Tagger) (interface{}, []string, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, arg map[string]*anypb.Any) (interface{}, error) {
 		var value int
 		if _, ok := arg[analogReaderNameKey]; !ok {
-			return nil, nil, data.FailedToReadErr(params.ComponentName, analogs.String(),
+			return nil, data.FailedToReadErr(params.ComponentName, analogs.String(),
 				errors.New("Must supply reader_name in additional_params for analog collector"))
 		}
 		if reader, err := board.AnalogByName(arg[analogReaderNameKey].String()); err == nil {
@@ -51,30 +51,30 @@ func newAnalogCollector(resource interface{}, params data.CollectorParams, tagge
 				// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore
 				// is used in the datamanager to exclude readings from being captured and stored.
 				if errors.Is(err, data.ErrNoCaptureToStore) {
-					return nil, nil, err
+					return nil, err
 				}
-				return nil, nil, data.FailedToReadErr(params.ComponentName, analogs.String(), err)
+				return nil, data.FailedToReadErr(params.ComponentName, analogs.String(), err)
 			}
 		}
 		return pb.ReadAnalogReaderResponse{
 			Value: int32(value),
-		}, nil, nil
+		}, nil
 	})
 	return data.NewCollector(cFunc, params)
 }
 
 // newGPIOCollector returns a collector to register a gpio get method. If one is already registered
 // with the same MethodMetadata it will panic.
-func newGPIOCollector(resource interface{}, params data.CollectorParams, tagger data.Tagger) (data.Collector, error) {
+func newGPIOCollector(resource interface{}, params data.CollectorParams) (data.Collector, error) {
 	board, err := assertBoard(resource)
 	if err != nil {
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, arg map[string]*anypb.Any, tagger data.Tagger) (interface{}, []string, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, arg map[string]*anypb.Any) (interface{}, error) {
 		var value bool
 		if _, ok := arg[gpioPinNameKey]; !ok {
-			return nil, nil, data.FailedToReadErr(params.ComponentName, gpios.String(),
+			return nil, data.FailedToReadErr(params.ComponentName, gpios.String(),
 				errors.New("Must supply pin_name in additional params for gpio collector"))
 		}
 		if gpio, err := board.GPIOPinByName(arg[gpioPinNameKey].String()); err == nil {
@@ -83,14 +83,14 @@ func newGPIOCollector(resource interface{}, params data.CollectorParams, tagger 
 				// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore
 				// is used in the datamanager to exclude readings from being captured and stored.
 				if errors.Is(err, data.ErrNoCaptureToStore) {
-					return nil, nil, err
+					return nil, err
 				}
-				return nil, nil, data.FailedToReadErr(params.ComponentName, gpios.String(), err)
+				return nil, data.FailedToReadErr(params.ComponentName, gpios.String(), err)
 			}
 		}
 		return pb.GetGPIOResponse{
 			High: value,
-		}, nil, nil
+		}, nil
 	})
 	return data.NewCollector(cFunc, params)
 }

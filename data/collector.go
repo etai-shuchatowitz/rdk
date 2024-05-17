@@ -31,7 +31,7 @@ import (
 var sleepCaptureCutoff = 2 * time.Millisecond
 
 // CaptureFunc allows the creation of simple Capturers with anonymous functions.
-type CaptureFunc func(ctx context.Context, params map[string]*anypb.Any, tagger Tagger) (interface{}, []string, error)
+type CaptureFunc func(ctx context.Context, params map[string]*anypb.Any) (interface{}, error)
 
 // FromDMContextKey is used to check whether the context is from data management.
 // Deprecated: use a camera.Extra with camera.NewContext instead.
@@ -72,7 +72,8 @@ type collector struct {
 	closed           bool
 	target           datacapture.BufferedWriter
 	lastLoggedErrors map[string]int64
-	tagger           Tagger
+	tagger           *Tagger
+	currentTags      []string
 }
 
 // Close closes the channels backing the Collector. It should always be called before disposing of a Collector to avoid
@@ -206,8 +207,7 @@ func (c *collector) tickerBasedCapture(started chan struct{}) {
 
 func (c *collector) getAndPushNextReading() {
 	timeRequested := timestamppb.New(c.clock.Now().UTC())
-	reading, tags, err := c.captureFunc(c.cancelCtx, c.params, c.tagger) // this will return the new tags
-	c.logger.Infof("tags are %s", tags)
+	reading, err := c.captureFunc(c.cancelCtx, c.params) // this will return the new tags
 	timeReceived := timestamppb.New(c.clock.Now().UTC())
 	if err != nil {
 		if errors.Is(err, ErrNoCaptureToStore) {
@@ -218,6 +218,29 @@ func (c *collector) getAndPushNextReading() {
 		return
 	}
 
+	if c.tagger != nil && c.tagger.Tags != nil {
+		new_tags, _ := c.tagger.Tags.Readings(c.cancelCtx, FromDMExtraMap)
+		// Type assertion to convert interface{} to map[string]interface{}
+		memData, ok := new_tags["mem"].(map[string]interface{})
+		if !ok {
+			fmt.Println("Failed to assert 'mem' field as map[string]interface{}")
+			return
+		}
+
+		// Accessing the 'used_percent' field
+		usedPercent, ok := memData["used_percent"].(float64)
+		if !ok {
+			fmt.Println("Failed to assert 'used_percent' field as float64")
+			return
+		}
+
+		if usedPercent > 81.5 {
+			c.currentTags = []string{"UsingMoreThan81.5"}
+		} else {
+			c.currentTags = []string{"UsingLessThan81.5"}
+		}
+	}
+
 	var msg v1.SensorData
 	switch v := reading.(type) {
 	case []byte:
@@ -225,7 +248,7 @@ func (c *collector) getAndPushNextReading() {
 			Metadata: &v1.SensorMetadata{
 				TimeRequested: timeRequested,
 				TimeReceived:  timeReceived,
-				Tags:          tags,
+				Tags:          c.currentTags,
 			},
 			Data: &v1.SensorData_Binary{
 				Binary: v,
@@ -257,7 +280,7 @@ func (c *collector) getAndPushNextReading() {
 			Metadata: &v1.SensorMetadata{
 				TimeRequested: timeRequested,
 				TimeReceived:  timeReceived,
-				Tags:          tags,
+				Tags:          c.currentTags,
 			},
 			Data: &v1.SensorData_Struct{
 				Struct: pbReading,
@@ -280,6 +303,7 @@ func NewCollector(captureFunc CaptureFunc, params CollectorParams) (Collector, e
 		return nil, errors.Wrap(err, fmt.Sprintf("failed to construct collector for %s", params.ComponentName))
 	}
 
+	fmt.Printf("\n-----NewCollector without tagger for %s\n", params.MethodParams)
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	var c clock.Clock
 	if params.Clock == nil {
@@ -287,7 +311,6 @@ func NewCollector(captureFunc CaptureFunc, params CollectorParams) (Collector, e
 	} else {
 		c = params.Clock
 	}
-	tagger := Tagger{Tags: []string{"tagger"}} // this can call getTaggerModule() to keep the tagger logic separate
 	return &collector{
 		captureResults:   make(chan *v1.SensorData, params.QueueSize),
 		captureErrors:    make(chan error, params.QueueSize),
@@ -301,7 +324,8 @@ func NewCollector(captureFunc CaptureFunc, params CollectorParams) (Collector, e
 		clock:            c,
 		closed:           false,
 		lastLoggedErrors: make(map[string]int64, 0),
-		tagger:           tagger,
+		tagger:           &params.Tagger,
+		currentTags:      []string{},
 	}, nil
 }
 

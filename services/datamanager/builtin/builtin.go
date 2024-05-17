@@ -137,6 +137,7 @@ type builtIn struct {
 
 	syncSensor           selectiveSyncer
 	selectiveSyncEnabled bool
+	tagger               data.Tagger
 
 	componentMethodFrequencyHz map[resourceMethodMetadata]float32
 
@@ -263,7 +264,10 @@ func (svc *builtIn) initializeOrUpdateCollector(
 	res resource.Resource,
 	md resourceMethodMetadata,
 	config datamanager.DataCaptureConfig,
+	tagger data.Tagger,
 ) (*collectorAndConfig, error) {
+
+	svc.logger.Infof("initing with tagger: %s", tagger)
 	// Build metadata.
 	captureMetadata, err := datacapture.BuildCaptureMetadata(
 		config.Name.API,
@@ -335,9 +339,10 @@ func (svc *builtIn) initializeOrUpdateCollector(
 		BufferSize:    captureBufferSize,
 		Logger:        svc.logger,
 		Clock:         clock,
+		Tagger:        tagger,
 	}
-	tagger := data.Tagger{Tags: []string{"reconfigured tagger"}}
-	collector, err := (*collectorConstructor)(res, params, tagger)
+	collector, err := (*collectorConstructor)(res, params)
+	svc.logger.Infof("reset collector to be: %s", collector)
 	if err != nil {
 		return nil, err
 	}
@@ -455,6 +460,11 @@ func (svc *builtIn) Reconfigure(
 		deleteEveryNthValue = svcConfig.DeleteEveryNthWhenDiskFull
 	}
 
+	tagger, err := sensor.FromDependencies(deps, "tagger")
+	svc.tagger = data.Tagger{Tags: tagger}
+
+	svc.logger.Infof("line 464 tagger: %s", svc.tagger)
+
 	// Initialize or add collectors based on changes to the component configurations.
 	newCollectors := make(map[resourceMethodMetadata]*collectorAndConfig)
 	if !svc.captureDisabled {
@@ -493,7 +503,7 @@ func (svc *builtIn) Reconfigure(
 					// We only use service-level tags.
 					resConf.Tags = svcConfig.Tags
 
-					newCollectorAndConfig, err := svc.initializeOrUpdateCollector(res, componentMethodMetadata, resConf)
+					newCollectorAndConfig, err := svc.initializeOrUpdateCollector(res, componentMethodMetadata, resConf, svc.tagger)
 					if err != nil {
 						svc.logger.CErrorw(ctx, "failed to initialize or update collector", "error", err)
 					} else {

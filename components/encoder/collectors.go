@@ -25,26 +25,26 @@ func (m method) String() string {
 
 // newTicksCountCollector returns a collector to register a ticks count method. If one is already registered
 // with the same MethodMetadata it will panic.
-func newTicksCountCollector(resource interface{}, params data.CollectorParams, tagger data.Tagger) (data.Collector, error) {
+func newTicksCountCollector(resource interface{}, params data.CollectorParams) (data.Collector, error) {
 	encoder, err := assertEncoder(resource)
 	if err != nil {
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger data.Tagger) (interface{}, []string, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any) (interface{}, error) {
 		v, positionType, err := encoder.Position(ctx, PositionTypeUnspecified, data.FromDMExtraMap)
 		if err != nil {
 			// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore
 			// is used in the datamanager to exclude readings from being captured and stored.
 			if errors.Is(err, data.ErrNoCaptureToStore) {
-				return nil, nil, err
+				return nil, err
 			}
-			return nil, nil, data.FailedToReadErr(params.ComponentName, ticksCount.String(), err)
+			return nil, data.FailedToReadErr(params.ComponentName, ticksCount.String(), err)
 		}
 		return pb.GetPositionResponse{
 			Value:        float32(v),
 			PositionType: pb.PositionType(positionType),
-		}, nil, nil
+		}, nil
 	})
 	return data.NewCollector(cFunc, params)
 }

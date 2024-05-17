@@ -32,21 +32,21 @@ func (m method) String() string {
 
 // newEndPositionCollector returns a collector to register an end position method. If one is already registered
 // with the same MethodMetadata it will panic.
-func newEndPositionCollector(resource interface{}, params data.CollectorParams, tagger data.Tagger) (data.Collector, error) {
+func newEndPositionCollector(resource interface{}, params data.CollectorParams) (data.Collector, error) {
 	arm, err := assertArm(resource)
 	if err != nil {
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger data.Tagger) (interface{}, []string, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any) (interface{}, error) {
 		v, err := arm.EndPosition(ctx, data.FromDMExtraMap)
 		if err != nil {
 			// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore
 			// is used in the datamanager to exclude readings from being captured and stored.
 			if errors.Is(err, data.ErrNoCaptureToStore) {
-				return nil, nil, err
+				return nil, err
 			}
-			return nil, nil, data.FailedToReadErr(params.ComponentName, endPosition.String(), err)
+			return nil, data.FailedToReadErr(params.ComponentName, endPosition.String(), err)
 		}
 		o := v.Orientation().OrientationVectorDegrees()
 		return pb.GetEndPositionResponse{
@@ -59,32 +59,32 @@ func newEndPositionCollector(resource interface{}, params data.CollectorParams, 
 				OZ:    o.OZ,
 				Theta: o.Theta,
 			},
-		}, nil, nil
+		}, nil
 	})
 	return data.NewCollector(cFunc, params)
 }
 
 // newJointPositionsCollector returns a collector to register a joint positions method. If one is already registered
 // with the same MethodMetadata it will panic.
-func newJointPositionsCollector(resource interface{}, params data.CollectorParams, tagger data.Tagger) (data.Collector, error) {
+func newJointPositionsCollector(resource interface{}, params data.CollectorParams) (data.Collector, error) {
 	arm, err := assertArm(resource)
 	if err != nil {
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger data.Tagger) (interface{}, []string, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any) (interface{}, error) {
 		v, err := arm.JointPositions(ctx, data.FromDMExtraMap)
 		if err != nil {
 			// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore
 			// is used in the datamanager to exclude readings from being captured and stored.
 			if errors.Is(err, data.ErrNoCaptureToStore) {
-				return nil, nil, err
+				return nil, err
 			}
-			return nil, nil, data.FailedToReadErr(params.ComponentName, jointPositions.String(), err)
+			return nil, data.FailedToReadErr(params.ComponentName, jointPositions.String(), err)
 		}
 		return pb.GetJointPositionsResponse{
 			Positions: v,
-		}, nil, nil
+		}, nil
 	})
 	return data.NewCollector(cFunc, params)
 }
