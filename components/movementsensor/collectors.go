@@ -61,15 +61,15 @@ func newLinearVelocityCollector(resource interface{}, params data.CollectorParam
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, extra map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, extra map[string]*anypb.Any, tagger data.Tagger) (interface{}, []string, error) {
 		vec, err := ms.LinearVelocity(ctx, data.FromDMExtraMap)
 		if err != nil {
 			// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore
 			// is used in the datamanager to exclude readings from being captured and stored.
 			if errors.Is(err, data.ErrNoCaptureToStore) {
-				return nil, err
+				return nil, nil, err
 			}
-			return nil, data.FailedToReadErr(params.ComponentName, position.String(), err)
+			return nil, nil, data.FailedToReadErr(params.ComponentName, position.String(), err)
 		}
 		return pb.GetLinearVelocityResponse{
 			LinearVelocity: &v1.Vector3{
@@ -77,7 +77,7 @@ func newLinearVelocityCollector(resource interface{}, params data.CollectorParam
 				Y: vec.Y,
 				Z: vec.Z,
 			},
-		}, nil
+		}, nil, nil
 	})
 	return data.NewCollector(cFunc, params)
 }
@@ -90,15 +90,15 @@ func newPositionCollector(resource interface{}, params data.CollectorParams, tag
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, extra map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, extra map[string]*anypb.Any, tagger data.Tagger) (interface{}, []string, error) {
 		pos, altitude, err := ms.Position(ctx, data.FromDMExtraMap)
 		if err != nil {
 			// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore
 			// is used in the datamanager to exclude readings from being captured and stored.
 			if errors.Is(err, data.ErrNoCaptureToStore) {
-				return nil, err
+				return nil, nil, err
 			}
-			return nil, data.FailedToReadErr(params.ComponentName, linearVelocity.String(), err)
+			return nil, nil, data.FailedToReadErr(params.ComponentName, linearVelocity.String(), err)
 		}
 		var lat, lng float64
 		if pos != nil {
@@ -111,7 +111,7 @@ func newPositionCollector(resource interface{}, params data.CollectorParams, tag
 				Longitude: lng,
 			},
 			AltitudeM: float32(altitude),
-		}, nil
+		}, nil, nil
 	})
 	return data.NewCollector(cFunc, params)
 }
@@ -124,15 +124,15 @@ func newAngularVelocityCollector(resource interface{}, params data.CollectorPara
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, extra map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, extra map[string]*anypb.Any, tagger data.Tagger) (interface{}, []string, error) {
 		vel, err := ms.AngularVelocity(ctx, data.FromDMExtraMap)
 		if err != nil {
 			// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore
 			// is used in the datamanager to exclude readings from being captured and stored.
 			if errors.Is(err, data.ErrNoCaptureToStore) {
-				return nil, err
+				return nil, nil, err
 			}
-			return nil, data.FailedToReadErr(params.ComponentName, angularVelocity.String(), err)
+			return nil, nil, data.FailedToReadErr(params.ComponentName, angularVelocity.String(), err)
 		}
 		return pb.GetAngularVelocityResponse{
 			AngularVelocity: &v1.Vector3{
@@ -140,7 +140,7 @@ func newAngularVelocityCollector(resource interface{}, params data.CollectorPara
 				Y: vel.Y,
 				Z: vel.Z,
 			},
-		}, nil
+		}, nil, nil
 	})
 	return data.NewCollector(cFunc, params)
 }
@@ -153,19 +153,19 @@ func newCompassHeadingCollector(resource interface{}, params data.CollectorParam
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, extra map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, extra map[string]*anypb.Any, tagger data.Tagger) (interface{}, []string, error) {
 		heading, err := ms.CompassHeading(ctx, data.FromDMExtraMap)
 		if err != nil {
 			// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore
 			// is used in the datamanager to exclude readings from being captured and stored.
 			if errors.Is(err, data.ErrNoCaptureToStore) {
-				return nil, err
+				return nil, nil, err
 			}
-			return nil, data.FailedToReadErr(params.ComponentName, compassHeading.String(), err)
+			return nil, nil, data.FailedToReadErr(params.ComponentName, compassHeading.String(), err)
 		}
 		return pb.GetCompassHeadingResponse{
 			Value: heading,
-		}, nil
+		}, nil, nil
 	})
 	return data.NewCollector(cFunc, params)
 }
@@ -178,15 +178,15 @@ func newLinearAccelerationCollector(resource interface{}, params data.CollectorP
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, extra map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, extra map[string]*anypb.Any, tagger data.Tagger) (interface{}, []string, error) {
 		accel, err := ms.LinearAcceleration(ctx, data.FromDMExtraMap)
 		if err != nil {
 			// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore
 			// is used in the datamanager to exclude readings from being captured and stored.
 			if errors.Is(err, data.ErrNoCaptureToStore) {
-				return nil, err
+				return nil, nil, err
 			}
-			return nil, data.FailedToReadErr(params.ComponentName, linearAcceleration.String(), err)
+			return nil, nil, data.FailedToReadErr(params.ComponentName, linearAcceleration.String(), err)
 		}
 		return pb.GetLinearAccelerationResponse{
 			LinearAcceleration: &v1.Vector3{
@@ -194,7 +194,7 @@ func newLinearAccelerationCollector(resource interface{}, params data.CollectorP
 				Y: accel.Y,
 				Z: accel.Z,
 			},
-		}, nil
+		}, nil, nil
 	})
 	return data.NewCollector(cFunc, params)
 }
@@ -207,15 +207,15 @@ func newOrientationCollector(resource interface{}, params data.CollectorParams, 
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, extra map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, extra map[string]*anypb.Any, tagger data.Tagger) (interface{}, []string, error) {
 		orient, err := ms.Orientation(ctx, data.FromDMExtraMap)
 		if err != nil {
 			// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore
 			// is used in the datamanager to exclude readings from being captured and stored.
 			if errors.Is(err, data.ErrNoCaptureToStore) {
-				return nil, err
+				return nil, nil, err
 			}
-			return nil, data.FailedToReadErr(params.ComponentName, orientation.String(), err)
+			return nil, nil, data.FailedToReadErr(params.ComponentName, orientation.String(), err)
 		}
 		var orientVector *spatialmath.OrientationVectorDegrees
 		if orient != nil {
@@ -228,7 +228,7 @@ func newOrientationCollector(resource interface{}, params data.CollectorParams, 
 				OZ:    orientVector.OZ,
 				Theta: orientVector.Theta,
 			},
-		}, nil
+		}, nil, nil
 	})
 	return data.NewCollector(cFunc, params)
 }
@@ -241,23 +241,23 @@ func newReadingsCollector(resource interface{}, params data.CollectorParams, tag
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, arg map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, arg map[string]*anypb.Any, tagger data.Tagger) (interface{}, []string, error) {
 		values, err := ms.Readings(ctx, data.FromDMExtraMap)
 		if err != nil {
 			// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore
 			// is used in the datamanager to exclude readings from being captured and stored.
 			if errors.Is(err, data.ErrNoCaptureToStore) {
-				return nil, err
+				return nil, nil, err
 			}
-			return nil, data.FailedToReadErr(params.ComponentName, readings.String(), err)
+			return nil, nil, data.FailedToReadErr(params.ComponentName, readings.String(), err)
 		}
 		readings, err := protoutils.ReadingGoToProto(values)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		return v1.GetReadingsResponse{
 			Readings: readings,
-		}, nil
+		}, nil, nil
 	})
 	return data.NewCollector(cFunc, params)
 }

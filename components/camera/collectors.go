@@ -44,7 +44,7 @@ func newNextPointCloudCollector(resource interface{}, params data.CollectorParam
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger data.Tagger) (interface{}, []string, error) {
 		_, span := trace.StartSpan(ctx, "camera::data::collector::CaptureFunc::NextPointCloud")
 		defer span.End()
 
@@ -55,9 +55,9 @@ func newNextPointCloudCollector(resource interface{}, params data.CollectorParam
 			// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore
 			// is used in the datamanager to exclude readings from being captured and stored.
 			if errors.Is(err, data.ErrNoCaptureToStore) {
-				return nil, err
+				return nil, nil, err
 			}
-			return nil, data.FailedToReadErr(params.ComponentName, nextPointCloud.String(), err)
+			return nil, nil, data.FailedToReadErr(params.ComponentName, nextPointCloud.String(), err)
 		}
 
 		var buf bytes.Buffer
@@ -66,10 +66,10 @@ func newNextPointCloudCollector(resource interface{}, params data.CollectorParam
 			buf.Grow(headerSize + v.Size()*4*4) // 4 numbers per point, each 4 bytes
 			err = pointcloud.ToPCD(v, &buf, pointcloud.PCDBinary)
 			if err != nil {
-				return nil, errors.Errorf("failed to convert returned point cloud to PCD: %v", err)
+				return nil, nil, errors.Errorf("failed to convert returned point cloud to PCD: %v", err)
 			}
 		}
-		return buf.Bytes(), nil
+		return buf.Bytes(), nil, nil
 	})
 	return data.NewCollector(cFunc, params)
 }
@@ -90,7 +90,7 @@ func newReadImageCollector(resource interface{}, params data.CollectorParams, ta
 		}
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger data.Tagger) (interface{}, []string, error) {
 		_, span := trace.StartSpan(ctx, "camera::data::collector::CaptureFunc::ReadImage")
 		defer span.End()
 
@@ -101,10 +101,10 @@ func newReadImageCollector(resource interface{}, params data.CollectorParams, ta
 			// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore
 			// is used in the datamanager to exclude readings from being captured and stored.
 			if errors.Is(err, data.ErrNoCaptureToStore) {
-				return nil, err
+				return nil, nil, err
 			}
 
-			return nil, data.FailedToReadErr(params.ComponentName, readImage.String(), err)
+			return nil, nil, data.FailedToReadErr(params.ComponentName, readImage.String(), err)
 		}
 		defer func() {
 			if release != nil {
@@ -114,14 +114,14 @@ func newReadImageCollector(resource interface{}, params data.CollectorParams, ta
 
 		mimeStr := new(wrapperspb.StringValue)
 		if err := mimeType.UnmarshalTo(mimeStr); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		outBytes, err := rimage.EncodeImage(ctx, img, mimeStr.Value)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		return outBytes, nil
+		return outBytes, nil, nil
 	})
 	return data.NewCollector(cFunc, params)
 }
@@ -131,7 +131,7 @@ func newGetImagesCollector(resource interface{}, params data.CollectorParams, ta
 	if err != nil {
 		return nil, err
 	}
-	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger data.Tagger) (interface{}, []string, error) {
 		_, span := trace.StartSpan(ctx, "camera::data::collector::CaptureFunc::GetImages")
 		defer span.End()
 
@@ -140,16 +140,16 @@ func newGetImagesCollector(resource interface{}, params data.CollectorParams, ta
 		resImgs, resMetadata, err := camera.Images(ctx)
 		if err != nil {
 			if errors.Is(err, data.ErrNoCaptureToStore) {
-				return nil, err
+				return nil, nil, err
 			}
-			return nil, data.FailedToReadErr(params.ComponentName, getImages.String(), err)
+			return nil, nil, data.FailedToReadErr(params.ComponentName, getImages.String(), err)
 		}
 
 		var imgsConverted []*pb.Image
 		for _, img := range resImgs {
 			format, imgBytes, err := encodeImageFromUnderlyingType(ctx, img.Image)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			imgPb := &pb.Image{
 				SourceName: img.SourceName,
@@ -161,7 +161,7 @@ func newGetImagesCollector(resource interface{}, params data.CollectorParams, ta
 		return pb.GetImagesResponse{
 			ResponseMetadata: resMetadata.AsProto(),
 			Images:           imgsConverted,
-		}, nil
+		}, nil, nil
 	})
 	return data.NewCollector(cFunc, params)
 }

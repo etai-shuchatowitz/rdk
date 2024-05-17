@@ -38,6 +38,7 @@ func NewBuffer(dir string, md *v1.DataCaptureMetadata) *Buffer {
 func (b *Buffer) Write(item *v1.SensorData) error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
+	b.MetaData.Tags = item.Metadata.Tags
 
 	if item.GetBinary() != nil {
 		binFile, err := NewFile(b.Directory, b.MetaData)

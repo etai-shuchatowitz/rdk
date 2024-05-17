@@ -51,20 +51,20 @@ func newVoltageCollector(resource interface{}, params data.CollectorParams, tagg
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, extra map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, extra map[string]*anypb.Any, tagger data.Tagger) (interface{}, []string, error) {
 		volts, isAc, err := ps.Voltage(ctx, data.FromDMExtraMap)
 		if err != nil {
 			// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore
 			// is used in the datamanager to exclude readings from being captured and stored.
 			if errors.Is(err, data.ErrNoCaptureToStore) {
-				return nil, err
+				return nil, nil, err
 			}
-			return nil, data.FailedToReadErr(params.ComponentName, voltage.String(), err)
+			return nil, nil, data.FailedToReadErr(params.ComponentName, voltage.String(), err)
 		}
 		return pb.GetVoltageResponse{
 			Volts: volts,
 			IsAc:  isAc,
-		}, nil
+		}, nil, nil
 	})
 	return data.NewCollector(cFunc, params)
 }
@@ -77,20 +77,20 @@ func newCurrentCollector(resource interface{}, params data.CollectorParams, tagg
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, extra map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, extra map[string]*anypb.Any, tagger data.Tagger) (interface{}, []string, error) {
 		curr, isAc, err := ps.Current(ctx, data.FromDMExtraMap)
 		if err != nil {
 			// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore
 			// is used in the datamanager to exclude readings from being captured and stored.
 			if errors.Is(err, data.ErrNoCaptureToStore) {
-				return nil, err
+				return nil, nil, err
 			}
-			return nil, data.FailedToReadErr(params.ComponentName, current.String(), err)
+			return nil, nil, data.FailedToReadErr(params.ComponentName, current.String(), err)
 		}
 		return pb.GetCurrentResponse{
 			Amperes: curr,
 			IsAc:    isAc,
-		}, nil
+		}, nil, nil
 	})
 	return data.NewCollector(cFunc, params)
 }
@@ -103,19 +103,19 @@ func newPowerCollector(resource interface{}, params data.CollectorParams, tagger
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, extra map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, extra map[string]*anypb.Any, tagger data.Tagger) (interface{}, []string, error) {
 		pwr, err := ps.Power(ctx, data.FromDMExtraMap)
 		if err != nil {
 			// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore
 			// is used in the datamanager to exclude readings from being captured and stored.
 			if errors.Is(err, data.ErrNoCaptureToStore) {
-				return nil, err
+				return nil, nil, err
 			}
-			return nil, data.FailedToReadErr(params.ComponentName, power.String(), err)
+			return nil, nil, data.FailedToReadErr(params.ComponentName, power.String(), err)
 		}
 		return pb.GetPowerResponse{
 			Watts: pwr,
-		}, nil
+		}, nil, nil
 	})
 	return data.NewCollector(cFunc, params)
 }
@@ -128,23 +128,23 @@ func newReadingsCollector(resource interface{}, params data.CollectorParams, tag
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, arg map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, arg map[string]*anypb.Any, tagger data.Tagger) (interface{}, []string, error) {
 		values, err := ps.Readings(ctx, data.FromDMExtraMap)
 		if err != nil {
 			// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore
 			// is used in the datamanager to exclude readings from being captured and stored.
 			if errors.Is(err, data.ErrNoCaptureToStore) {
-				return nil, err
+				return nil, nil, err
 			}
-			return nil, data.FailedToReadErr(params.ComponentName, readings.String(), err)
+			return nil, nil, data.FailedToReadErr(params.ComponentName, readings.String(), err)
 		}
 		readings, err := protoutils.ReadingGoToProto(values)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		return v1.GetReadingsResponse{
 			Readings: readings,
-		}, nil
+		}, nil, nil
 	})
 	return data.NewCollector(cFunc, params)
 }

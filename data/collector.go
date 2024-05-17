@@ -31,7 +31,7 @@ import (
 var sleepCaptureCutoff = 2 * time.Millisecond
 
 // CaptureFunc allows the creation of simple Capturers with anonymous functions.
-type CaptureFunc func(ctx context.Context, params map[string]*anypb.Any, tagger Tagger) (interface{}, error)
+type CaptureFunc func(ctx context.Context, params map[string]*anypb.Any, tagger Tagger) (interface{}, []string, error)
 
 // FromDMContextKey is used to check whether the context is from data management.
 // Deprecated: use a camera.Extra with camera.NewContext instead.
@@ -206,7 +206,8 @@ func (c *collector) tickerBasedCapture(started chan struct{}) {
 
 func (c *collector) getAndPushNextReading() {
 	timeRequested := timestamppb.New(c.clock.Now().UTC())
-	reading, err := c.captureFunc(c.cancelCtx, c.params, c.tagger)
+	reading, tags, err := c.captureFunc(c.cancelCtx, c.params, c.tagger) // this will return the new tags
+	c.logger.Infof("tags are %s", tags)
 	timeReceived := timestamppb.New(c.clock.Now().UTC())
 	if err != nil {
 		if errors.Is(err, ErrNoCaptureToStore) {
@@ -224,6 +225,7 @@ func (c *collector) getAndPushNextReading() {
 			Metadata: &v1.SensorMetadata{
 				TimeRequested: timeRequested,
 				TimeReceived:  timeReceived,
+				Tags:          tags,
 			},
 			Data: &v1.SensorData_Binary{
 				Binary: v,
@@ -255,6 +257,7 @@ func (c *collector) getAndPushNextReading() {
 			Metadata: &v1.SensorMetadata{
 				TimeRequested: timeRequested,
 				TimeReceived:  timeReceived,
+				Tags:          tags,
 			},
 			Data: &v1.SensorData_Struct{
 				Struct: pbReading,
@@ -284,7 +287,7 @@ func NewCollector(captureFunc CaptureFunc, params CollectorParams) (Collector, e
 	} else {
 		c = params.Clock
 	}
-	tagger := Tagger{Name: "tagger"}
+	tagger := Tagger{Tags: []string{"tagger"}} // this can call getTaggerModule() to keep the tagger logic separate
 	return &collector{
 		captureResults:   make(chan *v1.SensorData, params.QueueSize),
 		captureErrors:    make(chan error, params.QueueSize),

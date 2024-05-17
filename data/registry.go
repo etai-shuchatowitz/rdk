@@ -30,7 +30,7 @@ type CollectorParams struct {
 }
 
 type Tagger struct {
-	Name string
+	Tags []string
 }
 
 // Validate validates that p contains all required parameters.

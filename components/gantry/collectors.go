@@ -35,19 +35,19 @@ func newPositionCollector(resource interface{}, params data.CollectorParams, tag
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger data.Tagger) (interface{}, []string, error) {
 		v, err := gantry.Position(ctx, data.FromDMExtraMap)
 		if err != nil {
 			// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore
 			// is used in the datamanager to exclude readings from being captured and stored.
 			if errors.Is(err, data.ErrNoCaptureToStore) {
-				return nil, err
+				return nil, nil, err
 			}
-			return nil, data.FailedToReadErr(params.ComponentName, position.String(), err)
+			return nil, nil, data.FailedToReadErr(params.ComponentName, position.String(), err)
 		}
 		return pb.GetPositionResponse{
 			PositionsMm: scaleMetersToMm(v),
-		}, nil
+		}, nil, nil
 	})
 	return data.NewCollector(cFunc, params)
 }
@@ -60,19 +60,19 @@ func newLengthsCollector(resource interface{}, params data.CollectorParams, tagg
 		return nil, err
 	}
 
-	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger data.Tagger) (interface{}, error) {
+	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any, tagger data.Tagger) (interface{}, []string, error) {
 		v, err := gantry.Lengths(ctx, data.FromDMExtraMap)
 		if err != nil {
 			// A modular filter component can be created to filter the readings from a component. The error ErrNoCaptureToStore
 			// is used in the datamanager to exclude readings from being captured and stored.
 			if errors.Is(err, data.ErrNoCaptureToStore) {
-				return nil, err
+				return nil, nil, err
 			}
-			return nil, data.FailedToReadErr(params.ComponentName, lengths.String(), err)
+			return nil, nil, data.FailedToReadErr(params.ComponentName, lengths.String(), err)
 		}
 		return pb.GetLengthsResponse{
 			LengthsMm: scaleMetersToMm(v),
-		}, nil
+		}, nil, nil
 	})
 	return data.NewCollector(cFunc, params)
 }

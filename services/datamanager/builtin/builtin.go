@@ -336,7 +336,7 @@ func (svc *builtIn) initializeOrUpdateCollector(
 		Logger:        svc.logger,
 		Clock:         clock,
 	}
-	tagger := data.Tagger{Name: "reconfigured tagger"}
+	tagger := data.Tagger{Tags: []string{"reconfigured tagger"}}
 	collector, err := (*collectorConstructor)(res, params, tagger)
 	if err != nil {
 		return nil, err
