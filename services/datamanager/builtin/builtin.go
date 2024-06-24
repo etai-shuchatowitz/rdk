@@ -743,6 +743,7 @@ func (svc *builtIn) sync(ctx context.Context) {
 		return
 	}
 	syncer := svc.syncer
+	svc.logger.Infof("builtin syncer ref %p", &syncer)
 	svc.lock.Unlock()
 
 	// Retrieve all files in capture dir and send them to the syncer
@@ -847,11 +848,11 @@ func pollFilesystem(ctx context.Context, wg *sync.WaitGroup, captureDir string,
 			return
 		case <-t.C:
 			logger.Debug("checking disk usage")
-			shouldDelete, err := shouldDeleteBasedOnDiskUsage(ctx, captureDir, logger)
-			if err != nil {
-				logger.Warnw("error checking file system stats", "error", err)
-			}
-			if shouldDelete {
+			// shouldDelete, err := shouldDeleteBasedOnDiskUsage(ctx, captureDir, logger)
+			// if err != nil {
+			// 	logger.Warnw("error checking file system stats", "error", err)
+			// }
+			if true {
 				start := time.Now()
 				deletedFileCount, err := deleteFiles(ctx, syncer, deleteEveryNth, captureDir, logger)
 				duration := time.Since(start)

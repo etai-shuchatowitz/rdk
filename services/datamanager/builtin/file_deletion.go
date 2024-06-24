@@ -119,6 +119,7 @@ func deleteFiles(ctx context.Context, syncer datasync.Manager, deleteEveryNth in
 			isCompletedDataCaptureFile := strings.Contains(fileInfo.Name(), datacapture.FileExt)
 			// if at nth file and the file is not currently being written, mark as in progress if possible
 			if isCompletedDataCaptureFile && index%deleteEveryNth == 0 {
+				logger.Infof("file deletion syncer ref %p", syncer)
 				if syncer != nil && !syncer.MarkInProgress(path) {
 					logger.Debugw("Tried to mark file as in progress but lock already held", "file", d.Name())
 					return nil
